@@ -3,14 +3,16 @@ const axios = require('axios');
 const cors = require('cors');
 const { MongoClient } = require('mongodb');
 const app = express();
-const port = 3001; 
+require('dotenv').config();
+const clientID = process.env.CLIENT_ID;
+const clientSecret = process.env.CLIENT_SECRET;
+const mongoURI = process.env.MONGO_URI;
+const port = process.env.PORT || 3001;
 
-const clientID = 'vwbk9a29qsgfhp2ixl6hkrb1poaygm'; 
-const clientSecret = 'ze2dxw2yp2mvv6zlssywy47xxjhrvs'; 
 
-const mongoURI = 'mongodb+srv://ameyashetty18:ameyadbuser18@sacluster.rqzuo.mongodb.net/?retryWrites=true&w=majority&appName=SACluster';
-const dbName = 'SA_Mongo';
-const collectionName = 'Games';
+
+const dbName = process.env.DB_NAME;
+const collectionName = process.env.COLLECTION_NAME;
 
 app.use(cors()); 
 app.use(express.json());
@@ -226,7 +228,7 @@ app.get('/api/latest-games', async (req, res) => {
 });
 
 app.post('/api/send-to-api', async (req, res) => {
-  const cohereApiKey = '7zZnZJ6z4nrYTO9IdCMcvwW3oPWpuelouDndkmel';
+  const cohereApiKey = process.env.COHERE_API_KEY;
   const { inputValue, firstGame, secondGame } = req.body;
   
   if (!inputValue || !firstGame || !secondGame) {
