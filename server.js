@@ -36,7 +36,6 @@ const fetchPopularityData = async (accessToken) => {
 
 app.post('/api/games', async (req, res) => {
   try {
-    // Get the access token
     const tokenResponse = await axios.post(
       'https://id.twitch.tv/oauth2/token',
       null,
