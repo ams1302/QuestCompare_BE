@@ -3,19 +3,18 @@ const axios = require('axios');
 const cors = require('cors');
 const { MongoClient } = require('mongodb');
 const app = express();
-const port = 3001; // You can choose any port that is not in use
+const port = 3001; 
 
-const clientID = 'vwbk9a29qsgfhp2ixl6hkrb1poaygm'; // Your Client ID
-const clientSecret = 'ze2dxw2yp2mvv6zlssywy47xxjhrvs'; // Your Client Secret
+const clientID = 'vwbk9a29qsgfhp2ixl6hkrb1poaygm'; 
+const clientSecret = 'ze2dxw2yp2mvv6zlssywy47xxjhrvs'; 
 
 const mongoURI = 'mongodb+srv://ameyashetty18:ameyadbuser18@sacluster.rqzuo.mongodb.net/?retryWrites=true&w=majority&appName=SACluster';
 const dbName = 'SA_Mongo';
 const collectionName = 'Games';
 
-app.use(cors()); // Enable CORS for all routes
+app.use(cors()); 
 app.use(express.json());
 
-// Function to fetch popularity data
 const fetchPopularityData = async (accessToken) => {
   try {
     const response = await axios.post(
@@ -35,7 +34,6 @@ const fetchPopularityData = async (accessToken) => {
   }
 };
 
-// Endpoint to get IGDB game data
 app.post('/api/games', async (req, res) => {
   try {
     // Get the access token
@@ -52,16 +50,13 @@ app.post('/api/games', async (req, res) => {
     );
     const token = tokenResponse.data.access_token;
 
-    // Ensure gameName is provided in the request body
     const gameName = req.body.gameName;
     if (!gameName) {
       return res.status(400).json({ error: 'Game name is required' });
     }
 
-    // Fetch popularity data
     const popularityData = await fetchPopularityData(token);
 
-    // Fetch game data from IGDB
     const gameResponse = await axios.post(
       'https://api.igdb.com/v4/games',
       `fields id, name; where name ~ *"${gameName}"* & version_parent = null & category = 0;`,
@@ -73,17 +68,15 @@ app.post('/api/games', async (req, res) => {
       }
     );
 
-    // Combine the game data with the popularity data
     const gamesWithPopularity = gameResponse.data.map(game => {
       const popularityEntry = popularityData.find(p => p.game_id === game.id);
       return {
-        id: game.id, // Include ID for the result
+        id: game.id, 
         name: game.name,
         popularity: popularityEntry ? popularityEntry.value : 0, // Assign 0 if no popularity data is found
       };
     });
 
-    // Sort by popularity and take the top 10
     const top10Games = gamesWithPopularity
       .sort((a, b) => b.popularity - a.popularity)
       .slice(0, 10);
@@ -96,7 +89,6 @@ app.post('/api/games', async (req, res) => {
   }
 });
 
-// Function to fetch access token
 const fetchAccessToken = async () => {
   try {
     const response = await axios.post('https://id.twitch.tv/oauth2/token', null, {
@@ -113,7 +105,6 @@ const fetchAccessToken = async () => {
   }
 };
 
-// Function to fetch game data from IGDB
 const fetchGameData = async (accessToken, gameName) => {
   try {
     const response = await axios.post(
@@ -128,11 +119,9 @@ const fetchGameData = async (accessToken, gameName) => {
       }
     );
     
-    // Filter the game data to find the exact match
     const exactMatch = response.data.find(game => game.name.toLowerCase() === gameName.toLowerCase());
 
     if (exactMatch) {
-      // Create the JSON object with the desired structure
       const gameInfo = {
         cover_url: exactMatch.cover ? exactMatch.cover.url : 'N/A',
         name: exactMatch.name || 'N/A',
@@ -152,10 +141,8 @@ const fetchGameData = async (accessToken, gameName) => {
         screenshot_urls: exactMatch.screenshots ? exactMatch.screenshots.map(screenshot => screenshot.url) : [],
       };
 
-      // Print the JSON object
       console.log('Game Info:', JSON.stringify(gameInfo, null, 2));
 
-      // Insert the data into MongoDB
       await insertIntoMongoDB(gameInfo);
     } else {
       console.log(`No exact match found for "${gameName}".`);
@@ -165,7 +152,6 @@ const fetchGameData = async (accessToken, gameName) => {
   }
 };
 
-// Function to insert game data into MongoDB
 const insertIntoMongoDB = async (gameInfo) => {
   const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
   
@@ -183,7 +169,6 @@ const insertIntoMongoDB = async (gameInfo) => {
   }
 };
 
-// Endpoint to add games to MongoDB
 app.post('/api/mongoadd', async (req, res) => {
   try {
     const { game1, game2 } = req.body;
@@ -193,7 +178,6 @@ app.post('/api/mongoadd', async (req, res) => {
 
     const accessToken = await fetchAccessToken();
     
-    // Fetch and insert data for both games
     await fetchGameData(accessToken, game1);
     await fetchGameData(accessToken, game2);
 
@@ -204,7 +188,6 @@ app.post('/api/mongoadd', async (req, res) => {
   }
 });
 
-// Endpoint to clear all documents from MongoDB
 app.post('/api/clear', async (req, res) => {
   const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
 
@@ -213,7 +196,6 @@ app.post('/api/clear', async (req, res) => {
     const db = client.db(dbName);
     const collection = db.collection(collectionName);
     
-    // Delete all documents in the collection
     await collection.deleteMany({});
     console.log('All documents deleted');
     res.json({ message: 'All documents deleted successfully' });
@@ -233,7 +215,6 @@ app.get('/api/latest-games', async (req, res) => {
     const db = client.db(dbName);
     const collection = db.collection(collectionName);
     
-    // Fetch the latest two games sorted by insertion order (assuming MongoDB's default _id sorting)
     const latestGames = await collection.find().sort({ _id: -1 }).limit(2).toArray();
 
     res.json(latestGames);
